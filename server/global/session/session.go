@@ -1,11 +1,13 @@
 package session
 
 import (
-	"next-terminal/server/common/guacamole"
-	"next-terminal/server/common/term"
 	"sync"
 
+	"next-terminal/server/common/guacamole"
+	"next-terminal/server/common/term"
+
 	"github.com/gorilla/websocket"
+
 	"next-terminal/server/dto"
 )
 

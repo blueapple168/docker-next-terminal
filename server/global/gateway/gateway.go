@@ -4,9 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"next-terminal/server/common/term"
 	"os"
 	"sync"
+
+	"next-terminal/server/common/term"
 
 	"next-terminal/server/utils"
 

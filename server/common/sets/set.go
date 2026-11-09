@@ -27,7 +27,7 @@ func (s *Set) Contains(key string) bool {
 
 func (s *Set) ToArray() []string {
 	var keys []string
-	for key, _ := range s.data {
+	for key := range s.data {
 		keys = append(keys, key)
 	}
 	return keys
