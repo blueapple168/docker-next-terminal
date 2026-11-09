@@ -6,6 +6,9 @@ on:
     tags:
       - "v*"
 
+permissions:
+  contents: write
+
 jobs:
   next-terminal_Release:
     name: next-terminal release
@@ -13,33 +16,74 @@ jobs:
     steps:
       - name: Get version
         id: get_version
-        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+
       - name: Private Actions Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
       - name: node Setup
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
-          node-version: '16'
-      - name: npm install
+          node-version: '20'
+
+      # build.sh 里的品牌资源拷贝，必须在构建前端之前做
+      - name: Prepare branding
         run: |
-          cd web
-          npm install --global yarn
-          yarn
+          cp build/resources/logo.png web/src/images/logo.png
+          cp build/resources/logo-with-name.png web/src/images/logo-with-name.png
+          cp build/resources/favicon.ico web/public/favicon.ico
+
+      - name: Build web
+        working-directory: web
+        env:
+          CI: "false"
+          GENERATE_SOURCEMAP: "false"
+          NODE_OPTIONS: "--openssl-legacy-provider"
+        run: |
+          npm install --legacy-peer-deps --no-audit --no-fund
+
+          # 修复 ajv 版本错配：
+          # ajv-keywords@5 把 ajv@^8 声明为 peerDependency，而 --legacy-peer-deps 会跳过
+          # peer 安装，导致它解析到根目录 eslint 依赖的 ajv@6，webpack 构建时报
+          # Cannot find module 'ajv/dist/compile/codegen'。
+          if [ -d node_modules/schema-utils/node_modules/ajv ]; then
+            mkdir -p node_modules/ajv-keywords/node_modules
+            cp -r node_modules/schema-utils/node_modules/ajv node_modules/ajv-keywords/node_modules/
+          elif [ -d node_modules/ajv-formats/node_modules/ajv ]; then
+            mkdir -p node_modules/ajv-keywords/node_modules
+            cp -r node_modules/ajv-formats/node_modules/ajv node_modules/ajv-keywords/node_modules/
+          else
+            npm install --no-save --legacy-peer-deps --no-audit --no-fund ajv@^8.12.0
+          fi
+
+          node node_modules/react-app-rewired/bin/index.js build
+
       - name: go Setup
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: '1.20'
+          go-version: 'stable'
+
+      # 不再调用 build.sh：它里面用 yarn 和 upx，yarn 会因 engines 校验失败，
+      # runner 上也没有 upx。这里把 build.sh 的步骤显式展开。
       - name: Build package Linux
+        env:
+          CGO_ENABLED: "0"
+          GOOS: linux
+          GOARCH: amd64
+          GOFLAGS: "-mod=mod"
         run: |
-          sh build.sh
-          mv next-terminal next-terminal-bin
-          mkdir next-terminal
+          rm -rf server/resource/build
+          cp -r web/build server/resource/
+          go build -ldflags '-s -w' -o next-terminal-bin main.go
+          mkdir -p next-terminal
           cp next-terminal-bin next-terminal/next-terminal
           cp config.yml.example next-terminal/config.yml
           cp LICENSE next-terminal/
           tar zcvf next-terminal.tar.gz next-terminal/
+          ls -lh next-terminal.tar.gz
+
       - name: release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: next-terminal.tar.gz
         env:

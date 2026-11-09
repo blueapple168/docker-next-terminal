@@ -176,8 +176,7 @@ func (api WebTerminalApi) SshEndpoint(c echo.Context) error {
 			if err != nil {
 				continue
 			}
-			if err := termHandler.WindowChange(winSize.Rows, winSize.Cols); err != nil {
-			}
+			_ = termHandler.WindowChange(winSize.Rows, winSize.Cols)
 			_ = repository.SessionRepository.UpdateWindowSizeById(ctx, winSize.Rows, winSize.Cols, sessionId)
 		case Data:
 			input := []byte(msg.Content)

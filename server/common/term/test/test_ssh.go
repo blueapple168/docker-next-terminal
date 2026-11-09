@@ -1,3 +1,8 @@
+//go:build ignore
+// +build ignore
+
+// 手工调试用的独立程序，未被任何包引用，且仍在使用旧版 log API（无法编译）。
+// 加 build tag 排除出构建与类型检查，避免影响 golangci-lint。
 package main
 
 import (

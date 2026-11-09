@@ -31,7 +31,7 @@ type migrateService struct {
 }
 
 func (s *migrateService) Migrate() error {
-	var needMigrate = false
+	var needMigrate bool
 	var localVersion = ""
 	property, err := repository.PropertyRepository.FindByName(context.Background(), "version")
 	if err != nil {

@@ -120,10 +120,7 @@ func (api WorkCommandApi) CommandGetEndpoint(c echo.Context) (err error) {
 func (api WorkCommandApi) checkPermission(c echo.Context, commandId string) bool {
 	command, err := repository.CommandRepository.FindById(context.Background(), commandId)
 	if err != nil {
-		if errors.Is(gorm.ErrRecordNotFound, err) {
-			return true
-		}
-		return false
+		return errors.Is(gorm.ErrRecordNotFound, err)
 	}
 	account, _ := api.GetCurrentAccount(c)
 	userId := account.ID

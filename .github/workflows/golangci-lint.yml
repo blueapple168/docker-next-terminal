@@ -13,10 +13,11 @@ jobs:
     name: lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v2
+        uses: golangci/golangci-lint-action@v6
         with:
-          # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
-          version: v1.42.1
-          args: --timeout=5m
+          # v1.42.1（2021 年）无法解析本仓库的 Go 1.20 代码，
+          # 会把 abi.Abi 的嵌入方法提升误报成 "api.Success undefined (typecheck)"。
+          version: v1.62.2
+          args: --timeout=10m

@@ -139,7 +139,7 @@ func (r ShellJob) executeShellByLocal() {
 	}
 
 	now := time.Now()
-	var msg = ""
+	var msg string
 	log.Debug("run local command", log.String("cmd", metadataShell.Shell))
 	output, outerr, err := utils.Exec(metadataShell.Shell)
 	if err != nil {

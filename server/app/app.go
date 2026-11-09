@@ -98,7 +98,7 @@ func (app App) ReloadData() error {
 
 func Run() error {
 
-	fmt.Printf(branding.Hi)
+	fmt.Print(branding.Hi)
 
 	if err := app.InitDBData(); err != nil {
 		panic(err)

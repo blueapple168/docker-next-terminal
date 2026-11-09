@@ -225,7 +225,7 @@ func (service sessionService) Decrypt(item *model.Session) error {
 }
 
 func (service sessionService) renderBoolToStr(b *bool) string {
-	if *(b) == true {
+	if *b {
 		return "1"
 	}
 	return "0"
