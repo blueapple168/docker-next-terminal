@@ -8,9 +8,10 @@ package main
 import (
 	"fmt"
 	"io"
-	"next-terminal/server/log"
 	"os"
 	"time"
+
+	"next-terminal/server/log"
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"

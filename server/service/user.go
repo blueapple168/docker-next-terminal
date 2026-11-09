@@ -3,8 +3,9 @@ package service
 import (
 	"errors"
 	"fmt"
-	"next-terminal/server/common/nt"
 	"strings"
+
+	"next-terminal/server/common/nt"
 
 	"next-terminal/server/branding"
 	"next-terminal/server/common"

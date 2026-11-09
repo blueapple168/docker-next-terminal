@@ -2,8 +2,9 @@ package middleware
 
 import (
 	"net"
-	"next-terminal/server/common/nt"
 	"strings"
+
+	"next-terminal/server/common/nt"
 
 	"next-terminal/server/api"
 	"next-terminal/server/global/security"

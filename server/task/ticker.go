@@ -2,12 +2,14 @@ package task
 
 import (
 	"context"
+	"strconv"
+	"time"
+
 	"github.com/shirou/gopsutil/v3/load"
+
 	"next-terminal/server/common/nt"
 	"next-terminal/server/service"
 	"next-terminal/server/utils"
-	"strconv"
-	"time"
 
 	"next-terminal/server/log"
 	"next-terminal/server/repository"
@@ -16,6 +18,7 @@ import (
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/mem"
 	"github.com/shirou/gopsutil/v3/net"
+
 	"next-terminal/server/global/stat"
 )
 

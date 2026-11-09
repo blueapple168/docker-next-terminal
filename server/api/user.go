@@ -2,11 +2,13 @@ package api
 
 import (
 	"context"
-	"next-terminal/server/common/maps"
 	"strconv"
 	"strings"
 
+	"next-terminal/server/common/maps"
+
 	"github.com/labstack/echo/v4"
+
 	"next-terminal/server/model"
 	"next-terminal/server/repository"
 	"next-terminal/server/service"

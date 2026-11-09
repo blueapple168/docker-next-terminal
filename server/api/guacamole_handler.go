@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+
 	"next-terminal/server/common/guacamole"
 
 	"github.com/gorilla/websocket"

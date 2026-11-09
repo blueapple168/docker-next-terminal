@@ -2,10 +2,11 @@ package api
 
 import (
 	"context"
-	"next-terminal/server/common"
-	"next-terminal/server/common/maps"
 	"strconv"
 	"strings"
+
+	"next-terminal/server/common"
+	"next-terminal/server/common/maps"
 
 	"next-terminal/server/model"
 	"next-terminal/server/repository"

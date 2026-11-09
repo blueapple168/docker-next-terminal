@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
-	"next-terminal/server/common/nt"
 	"os"
 	"path"
 	"strconv"
 	"sync"
+
+	"next-terminal/server/common/nt"
 
 	"next-terminal/server/common"
 	"next-terminal/server/common/guacamole"

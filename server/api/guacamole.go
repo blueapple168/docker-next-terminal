@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"next-terminal/server/common/guacamole"
-	"next-terminal/server/common/nt"
 	"path"
 	"strconv"
+
+	"next-terminal/server/common/guacamole"
+	"next-terminal/server/common/nt"
 
 	"next-terminal/server/config"
 	"next-terminal/server/global/session"
