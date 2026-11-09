@@ -116,6 +116,10 @@ func (userApi UserApi) GetEndpoint(c echo.Context) error {
 		return err
 	}
 
+	// TOTPSecret 的 json tag 是 "-"，不会下发给前端，导致用户详情页"双因素认证"永远空白。
+	// 这里额外下发一个布尔标记，仅表示是否已绑定 TOTP，不泄露种子。
+	item.EnabledTotp = item.TOTPSecret != ""
+
 	return Success(c, item)
 }
 
