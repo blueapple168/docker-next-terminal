@@ -49,10 +49,13 @@ jobs:
           file: Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/next-terminal:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/next-terminal:${{ steps.get_version.outputs.VERSION }}
-            registry.cn-beijing.aliyuncs.com/${{ secrets.DOCKERHUB_USERNAME }}/next-terminal:latest
             registry.cn-beijing.aliyuncs.com/${{ secrets.DOCKERHUB_USERNAME }}/next-terminal:${{ steps.get_version.outputs.VERSION }}
+          # 说明：本分支用于发布 v1.3.9 补丁版（如 v1.3.9-2fa），只打版本号 tag。
+          # 不再推 latest，避免把 latest 覆盖成 1.3.9 的构建（latest 应跟随主线 v3.x）。
+          # 合回 master 时如需恢复 latest，请把下面两行加回 tags：
+          #   ${{ secrets.DOCKERHUB_USERNAME }}/next-terminal:latest
+          #   registry.cn-beijing.aliyuncs.com/${{ secrets.DOCKERHUB_USERNAME }}/next-terminal:latest
           cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/next-terminal:cache
           cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/next-terminal:cache,mode=max
 
