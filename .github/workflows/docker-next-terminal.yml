@@ -32,6 +32,23 @@ jobs:
           NODE_OPTIONS: "--openssl-legacy-provider"
         run: |
           npm install --legacy-peer-deps --no-audit --no-fund
+
+          # 修复 ajv 版本错配：
+          # ajv-keywords@5 把 ajv@^8 声明为 peerDependency，而 --legacy-peer-deps 会跳过
+          # peer 安装，导致它解析到根目录 eslint 依赖的 ajv@6，webpack 构建时报
+          # Cannot find module 'ajv/dist/compile/codegen'。
+          # 这里把 schema-utils 自带的 ajv@8 复制一份到 ajv-keywords 的 node_modules 下。
+          if [ -d node_modules/schema-utils/node_modules/ajv ]; then
+            mkdir -p node_modules/ajv-keywords/node_modules
+            cp -r node_modules/schema-utils/node_modules/ajv node_modules/ajv-keywords/node_modules/
+          elif [ -d node_modules/ajv-formats/node_modules/ajv ]; then
+            mkdir -p node_modules/ajv-keywords/node_modules
+            cp -r node_modules/ajv-formats/node_modules/ajv node_modules/ajv-keywords/node_modules/
+          else
+            npm install --no-save --legacy-peer-deps --no-audit --no-fund ajv@^8.12.0
+          fi
+          echo "ajv-keywords 解析到的 ajv 版本: $(node -p "require('./node_modules/ajv-keywords/node_modules/ajv/package.json').version" 2>/dev/null || echo '根目录 ajv')"
+
           node node_modules/react-app-rewired/bin/index.js build
       - name: Docker Login
         uses: docker/login-action@v1.10.0
