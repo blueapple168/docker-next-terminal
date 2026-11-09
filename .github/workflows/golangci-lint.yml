@@ -1,5 +1,6 @@
 name: golangci-lint
 on:
+  workflow_dispatch:
   push:
     tags:
       - v*
@@ -14,6 +15,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # 必须固定 Go 版本：runner 默认会装最新 Go（如 1.26），而 golangci-lint
+      # v1.62.2 是用 go1.23 编译的，typecheck 会报
+      # "file requires newer Go version go1.26 (application built with go1.23)"，
+      # 并连带把 echo 之类的依赖解析成 undefined。
+      - name: go Setup
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: false
+
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
