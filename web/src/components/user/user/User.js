@@ -144,6 +144,9 @@ const User = () => {
                             case 'user-force-totp':
                                 doForceTotp(record['id'], !record['forceTotp']);
                                 break;
+                            case 'user-reset-totp':
+                                doResetTotp(record['id']);
+                                break;
                         }
                     }}
                     menus={[
@@ -154,6 +157,11 @@ const User = () => {
                             key: 'user-force-totp',
                             name: record['forceTotp'] ? '取消强制双因素认证' : '强制开启双因素认证',
                             disabled: !hasMenu('user-force-totp')
+                        },
+                        {
+                            key: 'user-reset-totp',
+                            name: '重置双因素认证',
+                            disabled: !hasMenu('user-reset-totp') || !record['enabledTotp']
                         },
                     ]}
                 />,
@@ -166,16 +174,32 @@ const User = () => {
         actionRef.current.reload();
     }
 
-    const handleResetTotp = () => {
+    /**
+     * 重置双因素认证：清空已绑定的 TOTP 并强制用户重新绑定。
+     * ids 支持逗号分隔的批量 ID。
+     */
+    const doResetTotp = (ids) => {
+        const count = ids ? ids.split(',').length : 0;
+        if (count === 0) {
+            message.warn('请先选择用户');
+            return;
+        }
         Modal.confirm({
-            title: '您确定要重置用户的双因素认证信息吗？',
+            title: '重置双因素认证',
             icon: <ExclamationCircleOutlined/>,
-            content: '重置后用户无需二次认证即可登录系统。',
+            content: `已选中 ${count} 个账户。重置后其已绑定的双因素认证将被清空，`
+                + '当前登录会话会被强制下线，下次登录时必须重新绑定双因素认证才能使用系统。',
+            okText: '确认重置',
+            okType: 'danger',
+            cancelText: '取消',
             onOk() {
-                return new Promise(async (resolve, reject) => {
-                    await api.resetTotp(selectedRowKeys.join(','));
+                return new Promise(async (resolve) => {
+                    const success = await api.resetTotp(ids);
                     resolve();
-                    message.success("重置成功");
+                    if (success) {
+                        message.success('重置成功，用户下次登录需重新绑定双因素认证');
+                        actionRef.current.reload();
+                    }
                 }).catch(() => console.log('Oops errors!'))
             },
         });
@@ -303,7 +327,7 @@ const User = () => {
                 <Show menu={'user-reset-totp'}>
                     <Button key="button"
                             disabled={arrays.isEmpty(selectedRowKeys)}
-                            onClick={handleResetTotp}>
+                            onClick={() => doResetTotp(selectedRowKeys.join(','))}>
                         重置双因素认证
                     </Button>
                 </Show>,

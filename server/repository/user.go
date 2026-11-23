@@ -141,6 +141,15 @@ func (r userRepository) UpdateForceTotpById(c context.Context, id string, force 
 	return r.GetDB(c).Model(&model.User{}).Where("id = ?", id).Update("force_totp", force).Error
 }
 
+// ResetTotpById 把指定用户的双因素认证重置为初始状态：
+// 清空已绑定的 TOTP 种子，同时置为"强制开启"，使其下次登录必须重新绑定。
+func (r userRepository) ResetTotpById(c context.Context, id string) error {
+	return r.GetDB(c).Model(&model.User{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"totp_secret": "-",
+		"force_totp":  true,
+	}).Error
+}
+
 func (r userRepository) UpdateOnlineByUsername(c context.Context, username string, online bool) error {
 	sql := "update users set online = ? where username = ?"
 	return r.GetDB(c).Exec(sql, online, username).Error

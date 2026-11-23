@@ -436,19 +436,37 @@ func (service userService) FindById(id string) (*model.User, error) {
 	return &item, nil
 }
 
+// ResetTotp 管理员重置指定用户的双因素认证。
+// 重置后回到初始状态：已绑定的 TOTP 被清空，同时置为"强制开启"，
+// 用户下次登录必须先重新绑定双因素认证才能使用系统。
 func (service userService) ResetTotp(ids []string) error {
-	return service.Transaction(context.Background(), func(ctx context.Context) error {
+	err := service.Transaction(context.Background(), func(ctx context.Context) error {
 		for _, id := range ids {
-			u := &model.User{
-				TOTPSecret: "-",
-				ID:         id,
+			if id == "" {
+				continue
 			}
-			if err := repository.UserRepository.Update(ctx, u); err != nil {
+			if err := repository.UserRepository.ResetTotpById(ctx, id); err != nil {
 				return err
 			}
 		}
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+
+	// 登录令牌里缓存的是登录时刻的用户快照（含旧的 TOTP 种子），
+	// 不把在线会话踢掉的话，"强制重新绑定"的闸门不会生效，
+	// 用户能一直用到令牌自然过期（勾选"保持登录"最长两周）。
+	for _, id := range ids {
+		if id == "" {
+			continue
+		}
+		if err := service.LogoutById(context.TODO(), id); err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+	}
+	return nil
 }
 
 // ForceTotp 批量设置"强制开启双因素认证"标记。
