@@ -78,9 +78,13 @@ const Totp = () => {
                             <Result
                                 status="success"
                                 title="您已成功开启双因素认证!"
-                                subTitle="多因素认证-MFA二次认证-登录身份鉴别,访问控制更安全。"
+                                subTitle={infoQuery.data?.forceTotp
+                                    ? '管理员已强制要求该账户开启双因素认证，您无法自助解除绑定。'
+                                    : '多因素认证-MFA二次认证-登录身份鉴别,访问控制更安全。'}
                                 extra={[
-                                    <Button type="primary" key="console" danger onClick={() => {
+                                    <Button type="primary" key="console" danger
+                                            disabled={infoQuery.data?.forceTotp}
+                                            onClick={() => {
                                         Modal.confirm({
                                             title: '您确认要解除双因素认证吗？',
                                             icon: <ExclamationCircleOutlined/>,

@@ -1,6 +1,6 @@
 import React, {useState} from 'react';
 
-import {Button, Input, Layout, message, Modal, Popconfirm, Switch, Table} from "antd";
+import {Button, Input, Layout, message, Modal, Popconfirm, Switch, Table, Tag} from "antd";
 import UserModal from "./UserModal";
 import {Link, useNavigate} from "react-router-dom";
 import {ProTable, TableDropdown} from "@ant-design/pro-components";
@@ -53,6 +53,21 @@ const User = () => {
             title: '邮箱',
             dataIndex: 'mail',
             key: 'mail',
+        }, {
+            title: '双因素认证',
+            dataIndex: 'enabledTotp',
+            key: 'enabledTotp',
+            hideInSearch: true,
+            width: 140,
+            render: (enabledTotp, record) => {
+                if (enabledTotp) {
+                    return <Tag color="green">已开启</Tag>;
+                }
+                if (record['forceTotp']) {
+                    return <Tag color="orange">未开启（强制待绑定）</Tag>;
+                }
+                return <Tag color="red">未开启</Tag>;
+            }
         }, {
             title: '状态',
             dataIndex: 'status',
@@ -126,12 +141,20 @@ const User = () => {
                             case 'user-login-policy':
                                 navigate(`/user/${record['id']}?activeKey=login-policy`);
                                 break;
+                            case 'user-force-totp':
+                                doForceTotp(record['id'], !record['forceTotp']);
+                                break;
                         }
                     }}
                     menus={[
                         {key: 'user-detail', name: '详情', disabled: !hasMenu('user-detail')},
                         {key: 'user-authorised-asset', name: '授权资产', disabled: !hasMenu('user-authorised-asset')},
                         {key: 'user-login-policy', name: '登录策略', disabled: !hasMenu('user-login-policy')},
+                        {
+                            key: 'user-force-totp',
+                            name: record['forceTotp'] ? '取消强制双因素认证' : '强制开启双因素认证',
+                            disabled: !hasMenu('user-force-totp')
+                        },
                     ]}
                 />,
             ],
@@ -153,6 +176,37 @@ const User = () => {
                     await api.resetTotp(selectedRowKeys.join(','));
                     resolve();
                     message.success("重置成功");
+                }).catch(() => console.log('Oops errors!'))
+            },
+        });
+    }
+
+    /**
+     * 强制开启 / 取消强制开启双因素认证。
+     * ids 支持逗号分隔的批量 ID。
+     */
+    const doForceTotp = (ids, force) => {
+        const count = ids ? ids.split(',').length : 0;
+        if (count === 0) {
+            message.warn('请先选择用户');
+            return;
+        }
+        Modal.confirm({
+            title: force ? '强制开启双因素认证' : '取消强制双因素认证',
+            icon: <ExclamationCircleOutlined/>,
+            content: force
+                ? `已选中 ${count} 个账户。开启后，未绑定双因素认证的用户下次登录时必须先完成绑定才能使用系统。`
+                : `已选中 ${count} 个账户。取消后，未绑定双因素认证的用户将不再被强制要求绑定。`,
+            okText: '确认',
+            cancelText: '取消',
+            onOk() {
+                return new Promise(async (resolve) => {
+                    const success = await api.forceTotp(ids, force);
+                    resolve();
+                    if (success) {
+                        message.success(force ? '已开启强制双因素认证' : '已取消强制双因素认证');
+                        actionRef.current.reload();
+                    }
                 }).catch(() => console.log('Oops errors!'))
             },
         });
@@ -251,6 +305,13 @@ const User = () => {
                             disabled={arrays.isEmpty(selectedRowKeys)}
                             onClick={handleResetTotp}>
                         重置双因素认证
+                    </Button>
+                </Show>,
+                <Show menu={'user-force-totp'}>
+                    <Button key="button-force-totp"
+                            disabled={arrays.isEmpty(selectedRowKeys)}
+                            onClick={() => doForceTotp(selectedRowKeys.join(','), true)}>
+                        强制开启双因素认证
                     </Button>
                 </Show>,
             ]}

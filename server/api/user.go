@@ -26,7 +26,8 @@ func (userApi UserApi) CreateEndpoint(c echo.Context) (err error) {
 		return Fail(c, -1, "您输入的密码过长")
 	}
 
-	if err := service.UserService.CreateUser(item); err != nil {
+	// 传指针，创建成功后 item.ID 才能回填，否则响应里的 id 是空串
+	if err := service.UserService.CreateUser(&item); err != nil {
 		return err
 	}
 
@@ -120,7 +121,7 @@ func (userApi UserApi) GetEndpoint(c echo.Context) error {
 
 	// TOTPSecret 的 json tag 是 "-"，不会下发给前端，导致用户详情页"双因素认证"永远空白。
 	// 这里额外下发一个布尔标记，仅表示是否已绑定 TOTP，不泄露种子。
-	item.EnabledTotp = item.TOTPSecret != ""
+	item.EnabledTotp = item.TOTPSecret != "" && item.TOTPSecret != "-"
 
 	return Success(c, item)
 }
@@ -143,6 +144,27 @@ func (userApi UserApi) ResetTotpEndpoint(c echo.Context) error {
 	id := c.Param("id")
 	ids := strings.Split(id, ",")
 	if err := service.UserService.ResetTotp(ids); err != nil {
+		return err
+	}
+
+	return Success(c, "")
+}
+
+// ForceTotpEndpoint 强制开启/取消强制开启双因素认证，支持逗号分隔的批量 ID。
+// 表单参数 force 为空时默认按 true 处理。
+func (userApi UserApi) ForceTotpEndpoint(c echo.Context) error {
+	id := c.Param("id")
+	force := true
+	if v := c.FormValue("force"); v != "" {
+		parsed, err := strconv.ParseBool(v)
+		if err != nil {
+			return Fail(c, -1, "参数 force 不合法")
+		}
+		force = parsed
+	}
+
+	ids := strings.Split(id, ",")
+	if err := service.UserService.ForceTotp(ids, force); err != nil {
 		return err
 	}
 

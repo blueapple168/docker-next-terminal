@@ -39,6 +39,11 @@ const LoginForm = () => {
         let user = data['info'];
         setCurrentUser(user);
         if (user) {
+            // 管理员强制开启双因素认证但尚未绑定，先跳转到强制绑定页
+            if (user['needBindTotp']) {
+                navigate('/bind-totp');
+                return;
+            }
             if (user['type'] === 'user') {
                 navigate('/my-asset');
             } else {

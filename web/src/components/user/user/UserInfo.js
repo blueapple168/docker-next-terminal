@@ -24,7 +24,14 @@ const UserInfo = ({active, userId}) => {
                 <Descriptions.Item label="昵称">{user['nickname']}</Descriptions.Item>
                 <Descriptions.Item label="邮箱">{user['mail']}</Descriptions.Item>
                 <Descriptions.Item label="状态">{user['status'] === 'enabled' ? '开启' : '关闭'}</Descriptions.Item>
-                <Descriptions.Item label="双因素认证">{user['enabledTotp'] ? '已开启' : '未开启'}</Descriptions.Item>
+                <Descriptions.Item label="双因素认证">
+                    {
+                        user['enabledTotp']
+                            ? '已开启'
+                            : (user['forceTotp'] ? '未开启（管理员已强制开启，待用户登录时绑定）' : '未开启')
+                    }
+                </Descriptions.Item>
+                <Descriptions.Item label="强制双因素认证">{user['forceTotp'] ? '是' : '否'}</Descriptions.Item>
                 <Descriptions.Item label="来源">{user['source'] === 'ldap' ? 'LDAP' : '数据库'}</Descriptions.Item>
                 <Descriptions.Item label="创建时间">{user['created']}</Descriptions.Item>
             </Descriptions>

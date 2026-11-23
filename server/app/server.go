@@ -138,6 +138,7 @@ func setupRoutes() *echo.Echo {
 		users.GET("/:id", UserApi.GetEndpoint)
 		users.POST("/:id/change-password", UserApi.ChangePasswordEndpoint)
 		users.POST("/:id/reset-totp", UserApi.ResetTotpEndpoint)
+		users.POST("/:id/force-totp", UserApi.ForceTotpEndpoint)
 	}
 
 	userGroups := e.Group("/user-groups", mw.Admin)

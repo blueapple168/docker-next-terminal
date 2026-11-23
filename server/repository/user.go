@@ -19,7 +19,7 @@ func (r userRepository) FindAll(c context.Context) (o []model.User, err error) {
 }
 
 func (r userRepository) Find(c context.Context, pageIndex, pageSize int, username, nickname, mail, online, loginPolicyId, order, field string) (o []model.UserForPage, total int64, err error) {
-	db := r.GetDB(c).Table("users").Select("users.id,users.username,users.nickname,users.mail,users.online,users.created,users.type,users.status,users.source, users.totp_secret")
+	db := r.GetDB(c).Table("users").Select("users.id,users.username,users.nickname,users.mail,users.online,users.created,users.type,users.status,users.source,users.force_totp,users.totp_secret")
 	dbCounter := r.GetDB(c).Table("users")
 
 	if loginPolicyId != "" {
@@ -78,12 +78,10 @@ func (r userRepository) Find(c context.Context, pageIndex, pageSize int, usernam
 		o = make([]model.UserForPage, 0)
 	}
 
+	// TOTPSecret 不对外下发（json tag 为 "-"），这里就地推导成布尔标记供列表展示。
+	// 注意：不能覆盖 TOTPSecret 本身，否则后续逻辑无法区分"未绑定"与"已绑定"。
 	for i := 0; i < len(o); i++ {
-		if o[i].TOTPSecret == "" || o[i].TOTPSecret == "-" {
-			o[i].TOTPSecret = "0"
-		} else {
-			o[i].TOTPSecret = "1"
-		}
+		o[i].EnabledTotp = o[i].TOTPSecret != "" && o[i].TOTPSecret != "-"
 	}
 	return
 }
@@ -135,6 +133,12 @@ func (r userRepository) Create(c context.Context, o *model.User) error {
 
 func (r userRepository) Update(c context.Context, o *model.User) error {
 	return r.GetDB(c).Updates(o).Error
+}
+
+// UpdateForceTotpById 单独更新 force_totp 字段。
+// 不能复用 Update，因为 GORM 的 Updates(struct) 会忽略零值，导致"取消强制"（false）失效。
+func (r userRepository) UpdateForceTotpById(c context.Context, id string, force bool) error {
+	return r.GetDB(c).Model(&model.User{}).Where("id = ?", id).Update("force_totp", force).Error
 }
 
 func (r userRepository) UpdateOnlineByUsername(c context.Context, username string, online bool) error {

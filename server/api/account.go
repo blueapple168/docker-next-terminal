@@ -111,13 +111,15 @@ func (api AccountApi) LoginEndpoint(c echo.Context) error {
 	}
 
 	info := AccountInfo{
-		Id:         user.ID,
-		Username:   user.Username,
-		Nickname:   user.Nickname,
-		Type:       user.Type,
-		EnableTotp: user.TOTPSecret != "" && user.TOTPSecret != "-",
-		Roles:      user.Roles,
-		Menus:      menus,
+		Id:           user.ID,
+		Username:     user.Username,
+		Nickname:     user.Nickname,
+		Type:         user.Type,
+		EnableTotp:   user.TOTPSecret != "" && user.TOTPSecret != "-",
+		ForceTotp:    user.ForceTotp,
+		NeedBindTotp: service.UserService.NeedBindTotp(&user),
+		Roles:        user.Roles,
+		Menus:        menus,
 	}
 
 	return Success(c, maps.Map{
@@ -184,7 +186,34 @@ func (api AccountApi) ConfirmTOTPEndpoint(c echo.Context) error {
 		return err
 	}
 
+	// 登录令牌里缓存了用户快照，绑定成功后必须同步刷新，
+	// 否则中间件的"强制绑定"校验会一直认为该用户仍未绑定。
+	api.refreshTokenUser(c, confirmTOTP.Secret)
+
 	return Success(c, nil)
+}
+
+// refreshTokenUser 更新当前登录令牌缓存中的用户 TOTP 状态。
+func (api AccountApi) refreshTokenUser(c echo.Context, totpSecret string) {
+	token := GetToken(c)
+	v, found := cache.TokenManager.Get(token)
+	if !found {
+		return
+	}
+	authorization, ok := v.(dto.Authorization)
+	if !ok || authorization.User == nil {
+		return
+	}
+	// 复制一份再改，避免直接改写缓存中共享的用户对象
+	user := *authorization.User
+	user.TOTPSecret = totpSecret
+	authorization.User = &user
+
+	if authorization.Remember {
+		cache.TokenManager.Set(token, authorization, cache.RememberMeExpiration)
+	} else {
+		cache.TokenManager.Set(token, authorization, cache.NotRememberExpiration)
+	}
 }
 
 func (api AccountApi) ReloadTOTPEndpoint(c echo.Context) error {
@@ -216,6 +245,17 @@ func (api AccountApi) ReloadTOTPEndpoint(c echo.Context) error {
 
 func (api AccountApi) ResetTOTPEndpoint(c echo.Context) error {
 	account, _ := GetCurrentAccount(c)
+
+	// 被管理员强制开启双因素认证的账户不允许自助解绑，否则强制策略可被绕过。
+	// 这里从数据库读取最新状态，避免使用登录时缓存在令牌里的旧快照。
+	dbUser, err := repository.UserRepository.FindById(context.TODO(), account.ID)
+	if err != nil {
+		return err
+	}
+	if dbUser.ForceTotp {
+		return Fail(c, -1, "管理员已强制要求该账户开启双因素认证，无法自助解绑，请联系管理员")
+	}
+
 	u := &model.User{
 		TOTPSecret: "-",
 		ID:         account.ID,
@@ -223,6 +263,9 @@ func (api AccountApi) ResetTOTPEndpoint(c echo.Context) error {
 	if err := repository.UserRepository.Update(context.TODO(), u); err != nil {
 		return err
 	}
+
+	api.refreshTokenUser(c, "-")
+
 	return Success(c, "")
 }
 
@@ -261,14 +304,19 @@ func (api AccountApi) ChangePasswordEndpoint(c echo.Context) error {
 	return api.LogoutEndpoint(c)
 }
 
+// AccountInfo 登录账户信息。
+// NeedBindTotp 表示管理员已强制开启双因素认证且用户尚未绑定，
+// 前端据此跳转到强制绑定页，绑定完成前无法使用系统。
 type AccountInfo struct {
-	Id         string   `json:"id"`
-	Username   string   `json:"username"`
-	Nickname   string   `json:"nickname"`
-	Type       string   `json:"type"`
-	EnableTotp bool     `json:"enableTotp"`
-	Roles      []string `json:"roles"`
-	Menus      []string `json:"menus"`
+	Id           string   `json:"id"`
+	Username     string   `json:"username"`
+	Nickname     string   `json:"nickname"`
+	Type         string   `json:"type"`
+	EnableTotp   bool     `json:"enableTotp"`
+	ForceTotp    bool     `json:"forceTotp"`
+	NeedBindTotp bool     `json:"needBindTotp"`
+	Roles        []string `json:"roles"`
+	Menus        []string `json:"menus"`
 }
 
 func (api AccountApi) InfoEndpoint(c echo.Context) error {
@@ -297,13 +345,15 @@ func (api AccountApi) InfoEndpoint(c echo.Context) error {
 	}
 
 	info := AccountInfo{
-		Id:         user.ID,
-		Username:   user.Username,
-		Nickname:   user.Nickname,
-		Type:       user.Type,
-		EnableTotp: user.TOTPSecret != "" && user.TOTPSecret != "-",
-		Roles:      user.Roles,
-		Menus:      menus,
+		Id:           user.ID,
+		Username:     user.Username,
+		Nickname:     user.Nickname,
+		Type:         user.Type,
+		EnableTotp:   user.TOTPSecret != "" && user.TOTPSecret != "-",
+		ForceTotp:    user.ForceTotp,
+		NeedBindTotp: service.UserService.NeedBindTotp(user),
+		Roles:        user.Roles,
+		Menus:        menus,
 	}
 	return Success(c, info)
 }

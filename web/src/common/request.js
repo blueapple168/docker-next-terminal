@@ -33,6 +33,12 @@ const handleResult = (result) => {
         return false;
     } else if (result['code'] === 100) {
         return true;
+    } else if (result['code'] === 1001) {
+        // 管理员强制开启双因素认证，但当前账户尚未绑定：跳转到强制绑定页
+        if (window.location.hash.indexOf('/bind-totp') === -1) {
+            window.location.href = '#/bind-totp';
+        }
+        return false;
     } else if (result['code'] !== 1) {
         message.error(result['message']);
         return false;

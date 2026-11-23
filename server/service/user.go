@@ -232,7 +232,7 @@ func (service userService) ReloadToken() error {
 	return nil
 }
 
-func (service userService) CreateUser(user model.User) (err error) {
+func (service userService) CreateUser(user *model.User) (err error) {
 	return env.GetDB().Transaction(func(tx *gorm.DB) error {
 		c := service.Context(tx)
 		exist, err := repository.UserRepository.ExistByUsername(c, user.Username)
@@ -254,13 +254,13 @@ func (service userService) CreateUser(user model.User) (err error) {
 		user.Created = common.NowJsonTime()
 		user.Status = nt.StatusEnabled
 
-		if err := repository.UserRepository.Create(c, &user); err != nil {
+		if err := repository.UserRepository.Create(c, user); err != nil {
 			return err
 		}
-		if err := service.saveUserRoles(c, user); err != nil {
+		if err := service.saveUserRoles(c, *user); err != nil {
 			return err
 		}
-		if err := StorageService.CreateStorageByUser(c, &user); err != nil {
+		if err := StorageService.CreateStorageByUser(c, user); err != nil {
 			return err
 		}
 
@@ -449,6 +449,31 @@ func (service userService) ResetTotp(ids []string) error {
 		}
 		return nil
 	})
+}
+
+// ForceTotp 批量设置"强制开启双因素认证"标记。
+// 置为 true 后，若用户尚未绑定 TOTP，则下次登录必须先完成绑定才能使用系统。
+func (service userService) ForceTotp(ids []string, force bool) error {
+	return service.Transaction(context.Background(), func(ctx context.Context) error {
+		for _, id := range ids {
+			if id == "" {
+				continue
+			}
+			if err := repository.UserRepository.UpdateForceTotpById(ctx, id, force); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+// NeedBindTotp 判断账户是否被强制要求绑定双因素认证、但尚未完成绑定。
+// 这类账户登录后只能访问 /account 下的自助绑定接口。
+func (service userService) NeedBindTotp(user *model.User) bool {
+	if user == nil || !user.ForceTotp {
+		return false
+	}
+	return user.TOTPSecret == "" || user.TOTPSecret == "-"
 }
 
 func (service userService) ChangePassword(ids []string, password string) error {

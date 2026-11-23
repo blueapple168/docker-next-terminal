@@ -11,6 +11,17 @@ class UserApi extends Api {
         return result['code'] === 1;
     }
 
+    /**
+     * 强制开启/取消强制开启双因素认证。
+     * id 支持逗号分隔的批量 ID，force 为 false 时表示取消强制。
+     */
+    forceTotp = async (id, force = true) => {
+        let formData = new FormData();
+        formData.set('force', force ? 'true' : 'false');
+        let result = await request.post(`/${this.group}/${id}/force-totp`, formData);
+        return result['code'] === 1;
+    }
+
     changePassword = async (id, password) => {
         let formData = new FormData();
         formData.set('password', password);

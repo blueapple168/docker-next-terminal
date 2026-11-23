@@ -70,6 +70,15 @@ func Auth(next echo.HandlerFunc) echo.HandlerFunc {
 			}
 		}
 
+		// 强制双因素认证闸门：管理员要求开启但用户尚未绑定时，只放行 /account 下的
+		// 自助绑定接口（reload-totp / confirm-totp / info / logout），其余一律拒绝。
+		// 仅对登录令牌与 API 令牌生效，避免影响会话分享等受限令牌。
+		if strings.EqualFold(nt.LoginToken, authorization.Type) || strings.EqualFold(nt.AccessToken, authorization.Type) {
+			if !strings.HasPrefix(uri, "/account") && service.UserService.NeedBindTotp(authorization.User) {
+				return api.Fail(c, 1001, "管理员已强制要求该账户开启双因素认证，请先完成绑定")
+			}
+		}
+
 		if strings.HasPrefix(uri, "/account") {
 			return next(c)
 		}

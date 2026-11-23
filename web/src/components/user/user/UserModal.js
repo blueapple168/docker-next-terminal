@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {Form, Input, Modal, Radio, Select} from "antd";
+import {Form, Input, Modal, Radio, Select, Switch} from "antd";
 import userApi from "../../../api/user";
 import roleApi from "../../../api/role";
 import {useQuery} from "react-query";
@@ -98,6 +98,15 @@ const UserModal = ({visible, handleOk, handleCancel, confirmLoading, id}) => {
                            rules={[{required: false, type: "email", message: '请输入正确的邮箱'}]}>
                     <Input type='email' placeholder="请输入邮箱"/>
                 </Form.Item>
+
+                {
+                    !id ?
+                        (<Form.Item label="双因素认证" name='forceTotp' valuePropName='checked'
+                                    initialValue={false}
+                                    extra="开启后，该用户下次登录必须先绑定双因素认证，绑定成功后才能使用系统。">
+                            <Switch checkedChildren="强制开启" unCheckedChildren="不强制"/>
+                        </Form.Item>) : null
+                }
 
                 {
                     !id ?

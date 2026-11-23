@@ -19,6 +19,7 @@ const TermPlayback = React.lazy(() => import("./components/session/TermPlayback"
 const BatchCommand = React.lazy(() => import("./components/devops/BatchCommand"));
 const LoginPolicyDetail = React.lazy(() => import("./components/security/LoginPolicyDetail"));
 const Login = React.lazy(() => import("./components/Login"));
+const ForceBindTotp = React.lazy(() => import("./components/ForceBindTotp"));
 const Dashboard = React.lazy(() => import("./components/dashboard/Dashboard"));
 const Monitoring = React.lazy(() => import("./components/dashboard/Monitoring"));
 
@@ -77,6 +78,7 @@ const App = () => {
                 <Route path="/guacd-monitor" element={<GuacdMonitor/>}/>
                 <Route path="/guacd-playback" element={<GuacdPlayback/>}/>
                 <Route path="/login" element={<Login/>}/>
+                <Route path="/bind-totp" element={<ForceBindTotp/>}/>
                 <Route path="/permission-denied" element={<NoPermission/>}/>
                 <Route path="*" element={<NoMatch/>}/>
             </Route>
